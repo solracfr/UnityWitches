@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Enemy))]
 public class EnemyMover : MonoBehaviour
 {
     [SerializeField] List<Waypoint> path = new List<Waypoint>();
@@ -40,17 +41,35 @@ public class EnemyMover : MonoBehaviour
 
         path.Clear();
         
-        GameObject[] waypoints = GameObject.FindGameObjectsWithTag("Path");
+        GameObject parent = GameObject.FindGameObjectWithTag("Path");
 
-        foreach(GameObject waypoint in waypoints)
+        foreach(Transform child in parent.transform) // how does this work?
         {
-            path.Add(waypoint.GetComponent<Waypoint>());
+            Waypoint waypoint = child.GetComponent<Waypoint>();
+
+            // protects against path[0] being null
+            if (waypoint != null)
+            {
+                path.Add(waypoint);
+            }
+            //path.Add(child.GetComponent<Waypoint>()); ^ refactored from this line
         }
     }
 
     void ReturnToStart()
     {
-        transform.position = path[0].transform.position; // any enemy that's instantiated will get put into the start of the path
+        if (path.Count > 0)
+        {
+            transform.position = path[0].transform.position; // any enemy that's instantiated will get put into the start of the path
+        }
+        
+    }
+
+    void FinishPath()
+    {
+        // enemy has made it to the end of the path by this point
+        enemy.StealGold(); // still works if placed after disabling enemy; may cause problems if OnDisable() is utilized
+        gameObject.SetActive(false);
     }
 
     IEnumerator FollowPath()
@@ -74,8 +93,6 @@ public class EnemyMover : MonoBehaviour
             }
         }
 
-        // enemy has made it to the end of the path by this point
-        enemy.StealGold(); // still works if placed after disabling enemy; may cause problems if OnDisable() is utilized
-        gameObject.SetActive(false);
+        FinishPath();
     }
 }
